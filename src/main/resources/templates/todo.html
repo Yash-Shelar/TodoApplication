@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="caramellatte" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Todo App</title>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@5" rel="stylesheet" type="text/css"/>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@5/themes.css" rel="stylesheet" type="text/css"/>
+</head>
+<body>
+<div class="navbar bg-base-100 shadow-sm">
+    <div class="flex-1">
+        <a class="btn btn-ghost text-xl">Todo Manager</a>
+    </div>
+    <div class="flex-none mr-12">
+        <label class="flex cursor-pointer gap-2">
+            <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round">
+                <circle cx="12" cy="12" r="5" />
+                <path
+                        d="M12 1v2M12 21v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M1 12h2M21 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4" />
+            </svg>
+            <input type="checkbox" value="halloween" class="toggle theme-controller" />
+            <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+            </svg>
+        </label>
+    </div>
+</div>
+<div class="flex justify-center m-8">
+    <form action="/todo/add" method="POST"
+          class="mr-4 fieldset bg-base-200 border-base-300 rounded-box w-xs border p-4">
+        <legend class="fieldset-legend">Add A Task</legend>
+
+        <label class="label">Title</label>
+        <input type="text" name="title" class="input" placeholder="Title"/>
+
+        <label class="label">Description</label>
+        <input type="text" name="description" class="input" placeholder="Description"/>
+
+        <button type="submit" class="btn btn-primary mt-4">Add</button>
+    </form>
+    <div class="fieldset bg-base-200 border-base-300 rounded-box min-w-m border p-4">
+        <legend class="fieldset-legend">Filter By</legend>
+
+        <label class="label">Status</label>
+        <select name="filterStatus" id="filterStatus" class="select min-w-36">
+            <option value="">ANY</option>
+            <option th:each="statusDesc : ${T(com.project.TodoApplication.enums.TodoStatus).values()}"
+                    th:value="${statusDesc}" th:text="${statusDesc}"></option>
+        </select>
+
+        <label class="label">Date & Time</label>
+        <div class="flex gap-2 items-center">
+            <input type="date" name="filterDate" id="filterDate" class="input grow"/>
+            <input type="time" name="filterFrom" id="filterFrom" class="input grow"/>
+            <p class="grow">-</p>
+            <input type="time" name="filterTo" id="filterTo" class="input grow"/>
+        </div>
+
+        <div class="flex gap-2">
+            <button id="filter-apply-btn" type="submit" class="btn btn-outline btn-primary mt-4 grow">Apply</button>
+            <button id="filter-reset-btn" type="reset" class="btn btn-outline btn-secondary mt-4 grow">Reset</button>
+        </div>
+    </div>
+</div>
+
+<div class="flex-col m-8">
+    <div class="flex justify-center">
+        <table class="table w-2/3">
+            <!-- head -->
+            <thead>
+            <tr>
+                <th></th>
+                <th>Todo (Title & Description editable)</th>
+                <th>Current Status</th>
+                <th>Created At</th>
+                <th>Update Status</th>
+                <th></th>
+            </tr>
+            </thead>
+            <tbody>
+            <!-- row 1 -->
+            <tr th:each="todo,iter : ${todos}">
+                <th th:text="${iter.index + 1}"></th>
+                <td>
+                    <div class="flex items-center gap-3">
+                        <div>
+                            <p th:id="'editable-title-' + ${todo.id}" class="font-bold" th:text="${todo.title}"
+                               contenteditable="true" spellcheck="false"
+                               th:data-id="${todo.id}"></p>
+                            <p th:id="'editable-description-' + ${todo.id}"
+                               class="text-sm opacity-50 truncate max-w-64"
+                               th:text="${todo.description}"
+                               th:data-id="${todo.id}"
+                               contenteditable="true" spellcheck="false"></p>
+                        </div>
+                    </div>
+                </td>
+                <td>
+                    <div th:switch="${todo.status_id}">
+                        <div th:case="2" class="badge badge-outline badge-error"
+                             th:text="${TodoStatus.fromInteger(todo.status_id)}"></div>
+                        <div th:case="1" class="badge badge-outline badge-warning"
+                             th:text="${TodoStatus.fromInteger(todo.status_id)}"></div>
+                        <div th:case="0" class="badge badge-outline badge-success"
+                             th:text="${TodoStatus.fromInteger(todo.status_id)}"></div>
+                    </div>
+                </td>
+                <td>
+                    <div class="font-bold w-38"
+                         th:text="${#temporals.format(todo.createdAt, 'dd MMM yyyy hh:mm a')}"></div>
+                </td>
+                <th>
+                    <form th:action="'/todo/status-change/' + ${todo.id}" method="post">
+                        <div class="join">
+                            <select name="newStatus" class="select join-item min-w-36">
+                                <option th:each="statusDesc : ${T(com.project.TodoApplication.enums.TodoStatus).values()}"
+                                        th:value="${statusDesc}" th:text="${statusDesc}"></option>
+                            </select>
+                            <button type="submit" class="btn btn-warning join-item">Update</button>
+                        </div>
+                    </form>
+                </th>
+                <th>
+                    <form th:action="'/todo/delete/' + ${todo.id}" method="post">
+                        <button class="btn btn-error">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"
+                                 class="size-6">
+                                <path fill-rule="evenodd"
+                                      d="M16.5 4.478v.227a48.816 48.816 0 0 1 3.878.512.75.75 0 1 1-.256 1.478l-.209-.035-1.005 13.07a3 3 0 0 1-2.991 2.77H8.084a3 3 0 0 1-2.991-2.77L4.087 6.66l-.209.035a.75.75 0 0 1-.256-1.478A48.567 48.567 0 0 1 7.5 4.705v-.227c0-1.564 1.213-2.9 2.816-2.951a52.662 52.662 0 0 1 3.369 0c1.603.051 2.815 1.387 2.815 2.951Zm-6.136-1.452a51.196 51.196 0 0 1 3.273 0C14.39 3.05 15 3.684 15 4.478v.113a49.488 49.488 0 0 0-6 0v-.113c0-.794.609-1.428 1.364-1.452Zm-.355 5.945a.75.75 0 1 0-1.5.058l.347 9a.75.75 0 1 0 1.499-.058l-.346-9Zm5.48.058a.75.75 0 1 0-1.498-.058l-.347 9a.75.75 0 0 0 1.5.058l.345-9Z"
+                                      clip-rule="evenodd"/>
+                            </svg>
+                        </button>
+                    </form>
+                </th>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script th:src="@{/js/index.js}" type="text/javascript"></script>
+</body>
+</html>
